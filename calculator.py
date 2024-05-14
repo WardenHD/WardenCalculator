@@ -228,9 +228,9 @@ class CalculatorMethods:
         result = 0.0
         try:
             if len(actionsplit) == 3 and actionsplit[1] not in self.__actionsigns.values():
-                result = self.__actionsigns[actionsplit[1]](int(actionsplit[0]), int(actionsplit[2]))
+                result = self.__actionsigns[actionsplit[1]](float(actionsplit[0]), float(actionsplit[2]))
             elif len(actionsplit) == 2 and actionsplit[0] not in self.__actionsigns.values():
-                result = self.__actionsigns[actionsplit[0]](int(actionsplit[1]))
+                result = self.__actionsigns[actionsplit[0]](float(actionsplit[1]))
             elif len(actionsplit) == 1:  
                 if actionsplit[0] == 'stop':
                     print("\nStopping the program...\n")
@@ -244,7 +244,7 @@ class CalculatorMethods:
                 print("\nInvalid input, enter the action in format (num action num / action num / action)!\n")
                 input("Press Enter to continue...")
                 return
-        except ValueError:
+        except (ValueError, ZeroDivisionError):
             print("\nMATH ERROR")
             input("Press Enter to continue...")
             return
