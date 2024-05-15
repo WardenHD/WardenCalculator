@@ -1,7 +1,7 @@
 import json
-from os import path, mkdir
+from os import path, mkdir, name, system
 from configparser import ConfigParser, NoOptionError, NoSectionError
-from math import sin, cos, tan, degrees
+from math import sin, cos, tan, radians, sqrt
 
 
 class ConfigManager:
@@ -64,7 +64,9 @@ class ConfigManager:
             print(f"Failed to read field '{field}' in {self.__path}")
             return None
         except NoSectionError:
-            print("\nPlease, run the program again\n")
+            print("\nGenerating configs...")
+            print("Please, run the program again\n")
+            input("Press Enter to continue...")
             exit()
         
         return self.__config.get("Calculator", field).replace('"', '')
@@ -147,8 +149,8 @@ class CalculatorMethods:
         self.__configs = configs
 
         self.__actionsigns = {'+': self.__add, '-': self.__subtract, '/': self.__divide, '*': self.__multiply, 
-                              'sin': self.__sin, 'cos': self.__cos, 'tan': self.__tan, 'stop': None, 'clear history': None}
-
+                              'sin': self.__sin, 'cos': self.__cos, 'tan': self.__tan, 
+                              'sqrt': self.__sqrt, 'stop': None, 'clear history': None}
 
     def __add(self, *args: float) -> float:
         '''
@@ -192,7 +194,7 @@ class CalculatorMethods:
         :param 1: number to calculate the sine of (in degrees)
         :return: sine of param 1
         '''
-        return sin(degrees(args[0]))
+        return sin(radians(args[0]))
     
     def __cos(self, *args: float) -> float:
         '''
@@ -200,7 +202,7 @@ class CalculatorMethods:
         :param 1: number to calculate the cosine of (in degrees)
         :return: cosine of param 1
         '''
-        return cos(degrees(args[0]))
+        return cos(radians(args[0]))
     
     def __tan(self, *args: float) -> float:
         '''
@@ -208,18 +210,32 @@ class CalculatorMethods:
         :param 1: number to calculate the tangent of (in degrees)
         :return: tangent of param 1
         '''
-        return tan(degrees(args[0]))
+        return tan(radians(args[0]))
+    
+    def __sqrt(self, *args: float) -> float:
+        '''
+        Calculates the square root of a number
+        :param 1: number to calculate the square root of
+        :return: square root of param 1
+        '''
+        return sqrt(args[0])
 
     def process(self) -> None:
         '''
         Gets user input, and then executes the calculator action and then saves it into json file
         '''
+        print('=============================')
+        print('   WARDEN-CALCULATOR V 1.0   ')
+        print('=============================')
+
         print("\nAvailable actions:\n")
         for i in self.__actionsigns.keys():
             print(f"> {i}")
 
+        print("\nWARNING! sin, cos, tan are in degrees")
+
         if self.__configs.getconfigfield("showhistory").capitalize() == str(True):
-            print("\nCalculator History:")
+            print("\nCalculator History (last 5 entries):")
             for i in self.__saves.getentries(5):
                 print(f"{list(i.keys())[0]} = {list(i.values())[0]}")
 
@@ -227,25 +243,30 @@ class CalculatorMethods:
         actionsplit = action.split(' ')
         result = 0.0
         try:
-            if len(actionsplit) == 3 and actionsplit[1] not in self.__actionsigns.values():
+            if len(actionsplit) == 3 and all(not part.isalpha() for part in (actionsplit[0], actionsplit[2])) and actionsplit[1] \
+                in self.__actionsigns.keys():
+                if actionsplit[2] == "0": raise ZeroDivisionError()
                 result = self.__actionsigns[actionsplit[1]](float(actionsplit[0]), float(actionsplit[2]))
-            elif len(actionsplit) == 2 and actionsplit[0] not in self.__actionsigns.values():
-                result = self.__actionsigns[actionsplit[0]](float(actionsplit[1]))
+            elif len(actionsplit) == 2 and actionsplit[0] in self.__actionsigns.keys() and not actionsplit[1].isalpha():
+                result = self.__actionsigns[actionsplit[0]](float(actionsplit[1]))     
             elif len(actionsplit) == 1:  
                 if actionsplit[0] == 'stop':
                     print("\nStopping the program...\n")
                     exit()
-                elif actionsplit[0].replace(' ', '').lower() == 'clearhistory':
+                elif actionsplit[0].strip().lower() in ['clear', 'clearhistory']:
                     print("\nCleared calculator history")
                     self.__saves.clear()
                     input("Press Enter to continue...")
                     return
-            else:
-                print("\nInvalid input, enter the action in format (num action num / action num / action)!\n")
-                input("Press Enter to continue...")
-                return
-        except (ValueError, ZeroDivisionError):
-            print("\nMATH ERROR")
+                else:
+                    raise ValueError("\nInvalid input, enter the action in format (num action num / action num / action)!")
+            else: raise ValueError("\nInvalid input, enter the action in format (num action num / action num / action)!")
+        except (ValueError, KeyError) as e:
+            print(str(e))
+            input("Press Enter to continue...")
+            return
+        except ZeroDivisionError:
+            print("\nMath Error: Division by 0")
             input("Press Enter to continue...")
             return
         
@@ -261,9 +282,6 @@ class Main:
     saves = SaveManager(configs)
     calculator = CalculatorMethods(saves, configs)
 
-    print('\n=============================')
-    print('   WARDEN-CALCULATOR V 1.0   ')
-    print('=============================')
-
     while True:
+        system('cls' if name == 'nt' else 'clear')
         calculator.process()
