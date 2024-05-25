@@ -19,6 +19,22 @@ class ConfigManager:
 
         self.__initconfig()  
 
+    def __ensureoption(self, option: str, default: str) -> str:
+        '''
+        Ensures that a config option exists in Calculator section, if not, creates it with default value
+        :param config: ConfigParser object
+        :param option: field to check
+        :param default: default value for the field
+        :return: value of the option
+        '''
+        try:
+            return self.__config.get("Calculator", option)
+        except (NoSectionError, NoOptionError):
+            if not self.__config.has_section("Calculator"):
+                self.__config.add_section("Calculator")
+            self.__config.set("Calculator", option, default)
+            return default
+
     def __initconfig(self) -> None:
         '''
         Creates calc_data folder if it doesn't exist, and fills config at default __CONFIG_PATH with 
@@ -28,29 +44,12 @@ class ConfigManager:
 
         self.__config.read(self.__path)
 
-        try:
-            self.__config.get("Calculator", "savepath")
-        except (NoSectionError, NoOptionError):
-            config_update = ConfigParser()
-            config_update.add_section("Calculator")
-            config_update.set("Calculator", "savepath", self.__default_savepath)
-        
-            with open(self.__path, 'w') as ini: 
-                config_update.write(ini)
+        self.__ensureoption("showhistory", str(True))
+        self.__ensureoption("savepath", self.__default_savepath)
+        self.__ensureoption("showentrysum", str(True))
 
-        try:
-            self.__config.get("Calculator", "showhistory") 
-        except (NoSectionError, NoOptionError):
-            config_update = ConfigParser()
-            config_update.add_section("Calculator")
-            config_update.set("Calculator", "showhistory", str(True))
-            try: 
-                config_update.set("Calculator", "savepath", self.__config.get("Calculator", "savepath"))
-            except NoSectionError:
-                config_update.set("Calculator", "savepath", self.__default_savepath)
-        
-            with open(self.__path, 'w') as ini: 
-                config_update.write(ini)
+        with open(self.__path, 'w') as ini:
+            self.__config.write(ini)
  
     def getconfigfield(self, field: str) -> str:
         '''
@@ -60,14 +59,9 @@ class ConfigManager:
         '''
         try:
             self.__config.get("Calculator", field)
-        except NoOptionError:
+        except (NoOptionError, NoSectionError):
             print(f"Failed to read field '{field}' in {self.__path}")
             return None
-        except NoSectionError:
-            print("\nGenerating configs...")
-            print("Please, run the program again\n")
-            input("Press Enter to continue...")
-            exit()
         
         return self.__config.get("Calculator", field).replace('"', '')
 
@@ -118,14 +112,14 @@ class SaveManager:
     
     def getentries(self, number: int) -> list[dict]:
         '''
-        Gets entries from json save file
+        Gets last N of entries from json save file
         :param number: number of entries to get
         :return: list of entries in string
         '''
         with open(self.__path, 'r', encoding='utf-8') as rsave:
             actionlist: list = json.load(rsave)["actions"]
         
-        return actionlist[:number]
+        return actionlist[-number:]
     
     def clear(self) -> None:
         '''
@@ -238,6 +232,9 @@ class CalculatorMethods:
             print("\nCalculator History (last 5 entries):")
             for i in self.__saves.getentries(5):
                 print(f"{list(i.keys())[0]} = {list(i.values())[0]}")
+
+            if self.__configs.getconfigfield("showentrysum").capitalize() == str(True):
+                print(f"\nSum of entry results: {sum([list(d.values())[0] for d in self.__saves.getentries(5)])}")
 
         action: str = input("\nEnter the action(num action num / action num / action): ").lower()
         actionsplit = action.split(' ')
