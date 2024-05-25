@@ -3,6 +3,7 @@ from os import path, mkdir, name, system
 from configparser import ConfigParser, NoOptionError, NoSectionError
 from math import sin, cos, tan, radians, sqrt
 
+VERSION = "1.1"
 
 class ConfigManager:
     '''
@@ -219,7 +220,7 @@ class CalculatorMethods:
         Gets user input, and then executes the calculator action and then saves it into json file
         '''
         print('=============================')
-        print('   WARDEN-CALCULATOR V 1.0   ')
+        print(f'   WARDEN-CALCULATOR V {VERSION}   ')
         print('=============================')
 
         print("\nAvailable actions:\n")
